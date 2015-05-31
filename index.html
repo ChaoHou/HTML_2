@@ -62,10 +62,18 @@
                   {"text":"Trusts Stadium, Auckland"},
                   {"text":"Westpac Arena, Christchurch"}];
     initArray(venues,"orange","venue");
+	
+		var years = [{"text":2008},
+				 {"text":2009},
+				 {"text":2010},
+				 {"text":2011},
+				 {"text":2012},
+				 {"text":2013}]
+	initArray(years,"bisque","year");
     
-    var data = teams.concat(countries,venues);
+    var data = teams.concat(countries,venues,years);
     
-    var height = 700, width = 1200, poolHeight = 60, isStart = false;
+    var height = 800, width = 1200, poolHeight = 60, isStart = false;
     var svg = d3.select("body")
                 .append("svg")
                 .attr("height",height)
@@ -93,7 +101,7 @@
                           .links([])
                           .size([width,height])
                           .linkDistance([20])
-                          .charge([-1100])
+                          .charge([-1000])
                           .gravity(0.3);
 	
 	force.start();
@@ -191,7 +199,10 @@
 			
 			if(nodes.length == 1){
 				container.style("display","block");
-				display(nodes[0]);
+				displayOne(nodes[0]);
+			}else if(nodes.length == 2){
+				container.style("display","block");
+				displayTwo(nodes[0],nodes[1]);
 			}
 		};
 		
@@ -212,11 +223,21 @@
 		pad.open(pending);
 	}
 	
-	function display(node){
+	function displayOne(node){
 		if(node.type == "team"){
-			lineChart(node,tpData);
+			var data1 = [{"data":tpData,"color":"red"}];
+			lineChart(node,data1);
 		}else if(node.type == "country"){
-			lineChart(node,tdData);
+			var data2 = [{"data":tpData,"color":"red"},{"data":tdData,"color":"blue"}];
+			lineChart(node,data2);
+		}
+	}
+	
+	function displayTwo(node1,node2){
+		if(node1.type=='team' && node2.type=='venue'){
+			pieChart(pieData);
+		}else if(node1.type=='team' && node2.type=='country'){
+			barChart(barData);
 		}
 	}
 	
@@ -272,12 +293,81 @@
 					.attr("transform","translate("+margin.left+","+margin.top+")")
 					.call(yAxis)
 		
-		container.append("path")
-					.attr("class","line graph")
-					.attr("d",line(data))
-					.attr("transform","translate("+margin.left+","+margin.top+")");
+		for(var i=0;i<data.length;i++){
+			container.append("path")
+						.attr("class","line graph")
+						.attr("d",line(data[i].data))
+						.attr("stroke",data[i].color)
+						.attr("stroke-width",2)
+						.attr("transform","translate("+margin.left+","+margin.top+")");
+		}
 	}
 	
+	pieData =  [{"text":"win","percentage":66,"color":"DarkSeaGreen"},
+				{"text":"lose","percentage":34,"color":"LightSalmon"}];
+				
+	function pieChart(data){
+		var arc = d3.svg.arc()
+						.outerRadius(200)
+						.innerRadius(0);
+		var pie = d3.layout.pie()
+					.sort(null)
+					.value(function(d){return d.percentage})
+		var g = container.selectAll(".arc")
+						.data(pie(data))
+						.enter()
+						.append("g")
+						.attr("transform","translate(500,250)")
+						.attr("class","arc graph");
+		g.append("path")
+			.attr("d", arc)
+			.style("fill",function(d){return d.data.color});
+		g.append("text")
+		  .attr("transform", function(d) { return "translate(" + arc.centroid(d) + ")"; })
+		  .attr("dy", ".35em")
+		  .style("text-anchor", "middle")
+		  .text(function(d) { return d.data.text+":"+d.data.percentage+"%"; });
+	}
+	
+	barData =  [{"year":2008,"rate":33},
+				{"year":2009,"rate":66},
+				{"year":2010,"rate":50},
+				{"year":2011,"rate":33},
+				{"year":2012,"rate":83},
+				{"year":2013,"rate":100}]
+	
+	function barChart(data){
+		var margin = {top:20,right:20,bottom:20,left:100},
+			width = 1000 - margin.left - margin.right,
+			height = 480;
+		var x = d3.scale.ordinal().domain(data.map(function(d){return d.year})).rangeRoundBands([0, width],0.1);
+		var y = d3.scale.linear().domain([0,100]).range([height, 0]);
+		var xAxis = d3.svg.axis().scale(x).orient("bottom");
+		var yAxis = d3.svg.axis().scale(y).orient("left");
+		var line = d3.svg.line()
+							.x(function(d) { return x(d.round); })
+							.y(function(d) { return y(d.points); });
+		container.append("g")
+					.attr("class","axis graph")
+					.attr("transform","translate("+margin.left+","+(height+margin.top)+")")
+					.call(xAxis);
+		container.append("g")
+					.attr("class","axis graph")
+					.attr("transform","translate("+margin.left+","+margin.top+")")
+					.call(yAxis)
+		
+		container.selectAll(".bar")
+					.data(data)
+					.enter()
+					.append("rect")
+					.attr("class","bar graph")
+					.attr("x",function(d){return x(d.year)})
+					.attr("width",x.rangeBand())
+					.attr("y",function(d){return y(d.rate)})
+					.attr("height",function(d){return height - y(d.rate)})
+					.attr("transform","translate("+margin.left+","+margin.top+")");
+
+	}
   </script>
   </body>
 </html>
