@@ -131,14 +131,15 @@
 		.text(function(d){return d.text;})
 		
 	function insidePool(x, y){
-		if (x > 0 && x < width && y > 0 && y < poolHeight) return true;
+		if ( y > 0 && y < poolHeight) return true;
 		return false;
 	}
 	
     force.on("tick", function(e){
+		var pos = 0;
       nodes.each(function(d){
 		if(insidePool(d.x, d.y) && isStart){
-			//d.x =  d.x - width/2;
+			d.x = 200+(pos++)*310
 			d.y = poolHeight/2;
 		}
 	  })
